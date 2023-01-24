@@ -1,4 +1,4 @@
-AWS Cloudformation Templates
+#AWS Cloudformation Templates
 Use sample AWS CloudFormation templates to learn how to declare specific AWS resources or solve a particular use case. 
 
 ## Additional Resources
