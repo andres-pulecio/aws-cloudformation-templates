@@ -1,0 +1,9 @@
+# Here is a sample CloudFormation template that defines an S3 Bucket. It has a single resource that contains the S3 bucket.
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
