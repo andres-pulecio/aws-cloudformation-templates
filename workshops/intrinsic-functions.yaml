@@ -32,4 +32,5 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join [ '-', [ !Ref InstanceType, webserver ] ]
-
+        - Key: InstanceType
+          Value: !Sub ${InstanceType}
