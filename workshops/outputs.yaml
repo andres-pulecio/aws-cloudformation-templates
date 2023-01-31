@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: AWS CloudFormation workshop - 1. Create an Output section in your template and return Public DNS name of the instance. 2. Create Elastic IP resource and attach it to the EC2 instance. 3. Learn how to view outputs from within CloudFormation in AWS console.
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: 'Amazon EC2 Configuration'
+        Parameters:
+          - InstanceType
+          - AmiID
+    ParameterLabels:
+      InstanceType:
+        default: 'Type of EC2 Instance'
+Parameters:
+  EnvironmentType:
+    Description: 'Specify the Environment type of the stack.'
+    Type: String
+    Default: Test
+    AllowedValues:
+      - Dev
+      - Test
+      - Prod
+    ConstraintDescription: 'Specify either Test or Prod.'
+  AmiID:
+    Type: AWS::EC2::Image::Id
+    Description: 'The ID of the AMI.'
+Mappings:
+  EnvironmentToInstanceType: # Map Name
+    Dev: # Top level key
+      InstanceType: t2.nano
+    Test: # Top level key
+      InstanceType: t2.micro # Second level key
+    Prod:
+      InstanceType: t2.small
+Resources:
+  WebServerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AmiID
+      InstanceType: !FindInMap
+        - EnvironmentToInstanceType # Map Name
+        - !Ref EnvironmentType # Top Level Key
+        - InstanceType # Second Level Key
+      Tags:
+        - Key: Name
+          Value: !Join [ '-', [ !Ref EnvironmentType, webserver ] ] # Test-webserver
+Outputs:
+  EC2PublicDNS:
+    Description: 'Public DNS of EC2 instance'
+    Value: !GetAtt WebServerInstance.PublicDnsName
