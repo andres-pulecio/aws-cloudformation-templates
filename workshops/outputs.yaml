@@ -24,6 +24,7 @@ Parameters:
   AmiID:
     Type: AWS::EC2::Image::Id
     Description: 'The ID of the AMI.'
+    Default: ami-0aa7d40eeae50c9a9 #Amazon Linux 2 Kernel 5.10 AMI 2.0.20230119.1 x86_64 HVM gp2
 Mappings:
   EnvironmentToInstanceType: # Map Name
     Dev: # Top level key
