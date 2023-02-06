@@ -1,3 +1,4 @@
+
 AWSTemplateFormatVersion: "2010-09-09"
 Description: AWS CloudFormation workshop - Session manager.
 Metadata:
@@ -62,6 +63,3 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join [ '-', [ !Ref EnvironmentType, webserver ] ]
-
-
-
