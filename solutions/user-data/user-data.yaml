@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: AWS CloudFormation workshop - User Data.
+Description: AWS CloudFormation workshop - Update apache EC2 instance with text from an html.
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
