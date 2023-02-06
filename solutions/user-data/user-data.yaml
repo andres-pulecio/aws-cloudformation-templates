@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: AWS CloudFormation workshop - Session manager.
+Description: AWS CloudFormation workshop - User Data.
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
