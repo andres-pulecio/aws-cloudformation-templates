@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: AWS CloudFormation workshop - handles resource dependencies when you describe a resource property that references the return value of another resource. You reference resource return values with intrinsic functions such as Ref and Fn::GetAtt, depending on your use case for example, see which available return values are available for an Amazon SNS topic  and for an Amazon S3 bucket.
+Parameters:
+  EmailAddress:
+    Description: Enter an email address to subscribe to your Amazon SNS topic.
+    Type: String
+
+Resources:
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Resource-dependencies-workshop
+
+  SNSTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !Ref EmailAddress
+      Protocol: email
+      TopicArn: !Ref SNSTopic
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Workshop Security Group
+      Tags:
+        - Key: Name
+          Value: Resource-dependencies-workshop
+
+  SecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !GetAtt SecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: 0.0.0.0/0
