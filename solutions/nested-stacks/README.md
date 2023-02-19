@@ -3,6 +3,7 @@ This template create:
 * The root stack (which is also a parent stack for the first level stacks). This root stack will contain all the other stacks.
 * The VPC stack. This contains a simple VPC template which the EC2 instance will be placed into.
 * The IAM instance role stack. This contains the IAM instance role template decoupled form your EC2 template.
+* The EC2 stack. This contains the EC2 instance you have defined in your previous CloudFormation template.
 
 ## Prerequisites
 Whilst single templates can be deployed from your local machine, Nested Stacks require that the nested templates are stored in an S3 bucket.
