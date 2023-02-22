@@ -7,7 +7,7 @@ These templates create an infrastructure that describes an example, simple web a
 * One Amazon Route 53  hosted zone , where you'll store an alias  record that points to your load balancer.
 ## Infrastructure
 
-
+![arquitecture-zone](https://user-images.githubusercontent.com/53886913/220493903-c3482980-a952-4e9b-9129-063632e1c29c.png)
 
 ## Descriptions Stacks
 
