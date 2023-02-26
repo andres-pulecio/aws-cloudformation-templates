@@ -82,6 +82,7 @@ Resources:
         VpcId: !GetAtt VpcStack.Outputs.VpcId
         SubnetId: !GetAtt VpcStack.Outputs.PublicSubnet1
         WebServerInstanceProfile: !GetAtt IamStack.Outputs.WebServerInstanceProfile
+        RDSEndpointAddress: !GetAtt RDSStack.Outputs.RDSEndpointAddress
   RDSStack:
     Type: AWS::CloudFormation::Stack
     Properties:

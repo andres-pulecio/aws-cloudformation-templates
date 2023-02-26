@@ -29,3 +29,7 @@ Resources:
       MasterUsername: myusername
       MasterUserPassword: mypassword
       DBSubnetGroupName: !Ref DBSubnetGroup
+Outputs:
+  RDSEndpointAddress:
+    Description: 'RDS Database Endpoint Address'
+    Value: {"Fn::GetAtt": ["DBInstance","Endpoint.Address"]}

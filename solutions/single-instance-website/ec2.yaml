@@ -41,6 +41,10 @@ Parameters:
   WebServerInstanceProfile:
     Type: String
     Description: 'Instance profile resource ID'
+  
+  RDSEndpointAddress:
+    Type: String
+    Description: 'RDS Database Endpoint Address'
 
 Mappings:
   EnvironmentToInstanceType:
@@ -140,6 +144,10 @@ Resources:
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource WebServerInstance --region ${AWS::Region}
           # Call cfn-signal script to send a signal with exit code
           /opt/aws/bin/cfn-signal --exit-code $? --stack ${AWS::StackName} --resource WebServerInstance --region ${AWS::Region}
+
+          yum install -y httpd
+          yum install -y mysql
+          export MYSQL_HOST= ${RDSEndpointAddress}
 
     CreationPolicy:
       ResourceSignal:
