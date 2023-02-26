@@ -45,6 +45,12 @@ Parameters:
   RDSEndpointAddress:
     Type: String
     Description: 'RDS Database Endpoint Address'
+  RDSMasterUsername:
+    Type: String
+    Description: 'RDS Database Master User name'
+  RDSMasterUserPassword:
+    Type: String
+    Description: 'RDS Database Master User Password'
 
 Mappings:
   EnvironmentToInstanceType:
@@ -148,7 +154,8 @@ Resources:
           yum install -y httpd
           yum install -y mysql
           export MYSQL_HOST= ${RDSEndpointAddress}
-
+          mysql --user=${RDSMasterUsername} --password=${RDSMasterUserPassword} mydatabase
+        
     CreationPolicy:
       ResourceSignal:
         Count: 1

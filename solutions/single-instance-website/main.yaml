@@ -48,6 +48,21 @@ Parameters:
       - Test
       - Prod
     ConstraintDescription: 'Specify either Dev, Test or Prod.'
+  
+  # I must find a way to encrypt the password!!!
+  RDSMasterUsername:
+    AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-.]*[0-9a-zA-Z])*$
+    ConstraintDescription: Master User name can include numbers, lowercase letters, uppercase letters, periods (.), and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: RDS Database Master User name.
+    Type: String
+    Default: myusername
+  
+  RDSMasterUserPassword:
+    AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-.]*[0-9a-zA-Z])*$
+    ConstraintDescription:  Master User Password can include numbers, lowercase letters, uppercase letters, periods (.), and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: RDS Database Master User Password.
+    Type: String
+    Default: mypassword
 
 Resources:
   
@@ -83,6 +98,8 @@ Resources:
         SubnetId: !GetAtt VpcStack.Outputs.PublicSubnet1
         WebServerInstanceProfile: !GetAtt IamStack.Outputs.WebServerInstanceProfile
         RDSEndpointAddress: !GetAtt RDSStack.Outputs.RDSEndpointAddress
+        RDSMasterUsername: !Ref RDSMasterUsername
+        RDSMasterUserPassword: !Ref RDSMasterUserPassword
   RDSStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -91,7 +108,10 @@ Resources:
       Parameters:
         SubnetId1: !GetAtt VpcStack.Outputs.PublicSubnet1
         SubnetId2: !GetAtt VpcStack.Outputs.PublicSubnet2
+        RDSMasterUsername: !Ref RDSMasterUsername
+        RDSMasterUserPassword: !Ref RDSMasterUserPassword
         
 Outputs:
   WebsiteURL:
     Value: !GetAtt EC2Stack.Outputs.WebsiteURL
+

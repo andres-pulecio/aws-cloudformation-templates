@@ -8,6 +8,12 @@ Parameters:
   SubnetId2:
     Type: AWS::EC2::Subnet::Id
     Description: 'The Subnet ID'
+  RDSMasterUsername:
+    Type: String
+    Description: 'RDS Database Master User name'
+  RDSMasterUserPassword:
+    Type: String
+    Description: 'RDS Database Master User Password'
 Resources:
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -26,8 +32,8 @@ Resources:
       EngineVersion: "5.7"
       DBInstanceIdentifier: my-db-instance
       DBName: mydatabase
-      MasterUsername: myusername
-      MasterUserPassword: mypassword
+      MasterUsername: !Ref RDSMasterUsername
+      MasterUserPassword: !Ref RDSMasterUserPassword
       DBSubnetGroupName: !Ref DBSubnetGroup
 Outputs:
   RDSEndpointAddress:
