@@ -87,6 +87,19 @@ Resources:
       TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/iam.yaml
       TimeoutInMinutes: 10
 
+  RDSStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/RDS.yaml
+      TimeoutInMinutes: 20
+      Parameters:
+        SubnetId1: !GetAtt VpcStack.Outputs.PublicSubnet1
+        SubnetId2: !GetAtt VpcStack.Outputs.PublicSubnet2
+        RDSMasterUsername: !Ref RDSMasterUsername
+        RDSMasterUserPassword: !Ref RDSMasterUserPassword
+    DependsOn:
+      - VpcStack
+  
   EC2Stack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -100,16 +113,8 @@ Resources:
         RDSEndpointAddress: !GetAtt RDSStack.Outputs.RDSEndpointAddress
         RDSMasterUsername: !Ref RDSMasterUsername
         RDSMasterUserPassword: !Ref RDSMasterUserPassword
-  RDSStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/RDS.yaml
-      TimeoutInMinutes: 20
-      Parameters:
-        SubnetId1: !GetAtt VpcStack.Outputs.PublicSubnet1
-        SubnetId2: !GetAtt VpcStack.Outputs.PublicSubnet2
-        RDSMasterUsername: !Ref RDSMasterUsername
-        RDSMasterUserPassword: !Ref RDSMasterUserPassword
+    DependsOn:
+      - RDSStack
         
 Outputs:
   WebsiteURL:
