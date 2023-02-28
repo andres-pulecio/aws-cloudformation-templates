@@ -168,14 +168,11 @@ Resources:
           sudo yum install -y httpd
           sudo yum install -y mysql
           export MYSQL_HOST=${RDSEndpointAddress}
-      #     sudo mysql --user=${RDSMasterUsername} --password=${RDSMasterUserPassword} --database=mydatabase -e "CREATE USER 'wordpress' IDENTIFIED BY 'wordpress-pass';"
-      #     mysql --user=myusername --password=mypassword --database=mydatabase -e "CREATE USER 'wordpress' IDENTIFIED BY 'wordpress-pass';"
-      #     sudo mysql --user=myusername --password=mypassword mydatabase
         
-    CreationPolicy:
-      ResourceSignal:
-        Count: 1
-        Timeout: PT10M
+    # CreationPolicy:
+    #   ResourceSignal:
+    #     Count: 1
+    #     Timeout: PT10M
 
 
   WebServerEIP:
