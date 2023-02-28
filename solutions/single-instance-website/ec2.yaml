@@ -149,6 +149,8 @@ Resources:
     #               - /etc/cfn/cfn-hup.conf
     #               - /etc/cfn/hooks.d/cfn-auto-reloader.conf
 
+    DependsOn:
+      - WebServerSecurityGroup
     Properties:
       SubnetId: !Ref SubnetId
       IamInstanceProfile: !Ref WebServerInstanceProfile
@@ -159,28 +161,21 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join [ ' ', [ !Ref EnvironmentType, Web Server ] ]
-    DependsOn:
-      - WebServerSecurityGroup
-      # UserData:
-      #   Fn::Base64:
-      #     !Sub |
-      #     #!/bin/bash -xe
-      #     # Update aws-cfn-bootstrap to the latest
-      #     yum install -y aws-cfn-bootstrap
-      #     # Call cfn-init script to install files and packages
-      #     /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource WebServerInstance --region ${AWS::Region}
-      #     # Call cfn-signal script to send a signal with exit code
-      #     /opt/aws/bin/cfn-signal --exit-code $? --stack ${AWS::StackName} --resource WebServerInstance --region ${AWS::Region}
-
-      #     yum install -y httpd
-      #     yum install -y mysql
-      #     export MYSQL_HOST= ${RDSEndpointAddress}
-      #     mysql --user=${RDSMasterUsername} --password=${RDSMasterUserPassword} mydatabase
+      UserData:
+        Fn::Base64:
+          !Sub |
+          #!/bin/bash -xe
+          sudo yum install -y httpd
+          sudo yum install -y mysql
+          export MYSQL_HOST=${RDSEndpointAddress}
+      #     sudo mysql --user=${RDSMasterUsername} --password=${RDSMasterUserPassword} --database=mydatabase -e "CREATE USER 'wordpress' IDENTIFIED BY 'wordpress-pass';"
+      #     mysql --user=myusername --password=mypassword --database=mydatabase -e "CREATE USER 'wordpress' IDENTIFIED BY 'wordpress-pass';"
+      #     sudo mysql --user=myusername --password=mypassword mydatabase
         
-    # CreationPolicy:
-    #   ResourceSignal:
-    #     Count: 1
-    #     Timeout: PT10M
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT10M
 
 
   WebServerEIP:
