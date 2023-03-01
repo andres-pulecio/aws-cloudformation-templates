@@ -175,9 +175,7 @@ Resources:
           sudo systemctl start apache2
           sudo systemctl enable apache2
           export MYSQL_HOST=${RDSEndpointAddress}
-          # mysql --user=myusername --password=mypassword mydatabase
-          # mysql --user=myusername mydatabase
-           
+          # mysql --user=myusername --password=mypassword mydatabase           
         
     # CreationPolicy:
     #   ResourceSignal:
