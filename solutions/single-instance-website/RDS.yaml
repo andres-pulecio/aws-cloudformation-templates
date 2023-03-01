@@ -35,11 +35,6 @@ Resources:
       GroupDescription: Acceso a la base de datos desde la VPC
       DBSecurityGroupIngress:
         - EC2SecurityGroupId: !Ref WebServerSecurityGroup
-        # - EC2SecurityGroupId: sg-0c05933f3eec392f4
-          # EC2SecurityGroupName: simplewebsecuritygroup
-          # CIDRIP: 0.0.0.0/0
-          # EC2SecurityGroupOwnerId: !Ref AWS::AccountId
-          # DBSecurityGroupName: default
       EC2VpcId: !Ref VpcId
   DBInstance:
     Type: AWS::RDS::DBInstance
@@ -59,8 +54,6 @@ Resources:
       PubliclyAccessible: true
       VPCSecurityGroups:
         - !Ref WebServerSecurityGroup
-        # - !Ref DBSecurityGroup
-        # - Fn::GetAtt: [ DBSecurityGroup, groupId ]
 
 Outputs:
   RDSEndpointAddress:

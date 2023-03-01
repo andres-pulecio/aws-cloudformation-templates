@@ -176,7 +176,6 @@ Resources:
           sudo systemctl enable apache2
           export MYSQL_HOST=${RDSEndpointAddress}
           # mysql --user=myusername --password=mypassword mydatabase
-          # mysql -h my-db-instance.c6z9trgtwj6l.us-east-1.rds.amazonaws.com -u myusername -p
           # mysql --user=myusername mydatabase
            
         
