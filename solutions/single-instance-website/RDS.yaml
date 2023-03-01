@@ -56,6 +56,7 @@ Resources:
       MasterUsername: !Ref RDSMasterUsername
       MasterUserPassword: !Ref RDSMasterUserPassword
       DBSubnetGroupName: !Ref DBSubnetGroup
+      PubliclyAccessible: true
       VPCSecurityGroups:
         - !Ref WebServerSecurityGroup
         # - !Ref DBSecurityGroup

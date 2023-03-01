@@ -26,9 +26,8 @@ Parameters:
     ConstraintDescription: 'Specify either Dev, Test or Prod.'
 
   AmiID:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Type: String
     Description: 'The ID of the AMI.'
-    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
 
   VpcId:
     Type: AWS::EC2::VPC::Id
@@ -168,10 +167,17 @@ Resources:
         Fn::Base64:
           !Sub |
           #!/bin/bash -xe
-          sudo yum install -y httpd
-          sudo yum install -y mysql
+          sudo apt update
+          sudo apt install mysql-server
+          sudo systemctl start mysql
+          sudo systemctl enable mysql
+          sudo apt install apache2
+          sudo systemctl start apache2
+          sudo systemctl enable apache2
           export MYSQL_HOST=${RDSEndpointAddress}
-          mysql --user=myusername --password=mypassword mydatabase
+          # mysql --user=myusername --password=mypassword mydatabase
+          # mysql -h my-db-instance.c6z9trgtwj6l.us-east-1.rds.amazonaws.com -u myusername -p
+          # mysql --user=myusername mydatabase
            
         
     # CreationPolicy:

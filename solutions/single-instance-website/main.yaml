@@ -65,6 +65,12 @@ Parameters:
     Type: String
     Default: mypassword
 
+  AmiID:
+    ConstraintDescription: ID of the AMI can include numbers, lowercase letters, uppercase letters, periods (.), and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: 'The ID of the AMI.'
+    Type: String
+    Default: ami-0557a15b87f6559cf
+
 Resources:
   
   VpcStack:
@@ -118,6 +124,7 @@ Resources:
         RDSMasterUsername: !Ref RDSMasterUsername
         RDSMasterUserPassword: !Ref RDSMasterUserPassword
         WebServerSecurityGroup: !GetAtt VpcStack.Outputs.EC2SecurityGroupName
+        AmiID: !Ref AmiID
     DependsOn:
       - RDSStack
         
