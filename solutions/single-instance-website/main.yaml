@@ -98,8 +98,11 @@ Resources:
         SubnetId2: !GetAtt VpcStack.Outputs.PublicSubnet2
         RDSMasterUsername: !Ref RDSMasterUsername
         RDSMasterUserPassword: !Ref RDSMasterUserPassword
+        VpcId: !GetAtt VpcStack.Outputs.VpcId
+        WebServerSecurityGroup: !GetAtt VpcStack.Outputs.EC2SecurityGroupName
     DependsOn:
       - VpcStack
+      - IamStack
   
   EC2Stack:
     Type: AWS::CloudFormation::Stack
@@ -114,6 +117,7 @@ Resources:
         RDSEndpointAddress: !GetAtt RDSStack.Outputs.RDSEndpointAddress
         RDSMasterUsername: !Ref RDSMasterUsername
         RDSMasterUserPassword: !Ref RDSMasterUserPassword
+        WebServerSecurityGroup: !GetAtt VpcStack.Outputs.EC2SecurityGroupName
     DependsOn:
       - RDSStack
         

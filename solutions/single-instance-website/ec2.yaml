@@ -51,6 +51,9 @@ Parameters:
   RDSMasterUserPassword:
     Type: String
     Description: 'RDS Database Master User Password'
+  WebServerSecurityGroup:
+    Type: String
+    Description: 'RDS Database Master User Password'
 
 Mappings:
   EnvironmentToInstanceType:
@@ -62,25 +65,25 @@ Mappings:
       InstanceType: t2.small
 
 Resources:
-  WebServerSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Enable HTTP and HTTPS access
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-      SecurityGroupEgress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: 0.0.0.0/0
-      VpcId: !Ref VpcId
+  # WebServerSecurityGroup:
+  #   Type: AWS::EC2::SecurityGroup
+  #   Properties:
+  #     GroupDescription: Enable HTTP and HTTPS access
+  #     SecurityGroupIngress:
+  #       - IpProtocol: tcp
+  #         FromPort: 80
+  #         ToPort: 80
+  #         CidrIp: 0.0.0.0/0
+  #     SecurityGroupEgress:
+  #       - IpProtocol: tcp
+  #         FromPort: 80
+  #         ToPort: 80
+  #         CidrIp: 0.0.0.0/0
+  #       - IpProtocol: tcp
+  #         FromPort: 443
+  #         ToPort: 443
+  #         CidrIp: 0.0.0.0/0
+  #     VpcId: !Ref VpcId
   WebServerInstance:
     Type: AWS::EC2::Instance
     # Metadata:
@@ -149,8 +152,8 @@ Resources:
     #               - /etc/cfn/cfn-hup.conf
     #               - /etc/cfn/hooks.d/cfn-auto-reloader.conf
 
-    DependsOn:
-      - WebServerSecurityGroup
+    # DependsOn:
+    #   - WebServerSecurityGroup
     Properties:
       SubnetId: !Ref SubnetId
       IamInstanceProfile: !Ref WebServerInstanceProfile
@@ -168,6 +171,8 @@ Resources:
           sudo yum install -y httpd
           sudo yum install -y mysql
           export MYSQL_HOST=${RDSEndpointAddress}
+          mysql --user=myusername --password=mypassword mydatabase
+           
         
     # CreationPolicy:
     #   ResourceSignal:
