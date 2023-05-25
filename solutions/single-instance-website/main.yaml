@@ -65,12 +65,6 @@ Parameters:
     Type: String
     Default: mypassword
 
-  AmiID:
-    ConstraintDescription: ID of the AMI can include numbers, lowercase letters, uppercase letters, periods (.), and hyphens (-). It cannot start or end with a hyphen (-).
-    Description: 'The ID of the AMI.'
-    Type: String
-    Default: ami-0557a15b87f6559cf
-
 Resources:
   
   VpcStack:
@@ -110,25 +104,24 @@ Resources:
       - VpcStack
       - IamStack
   
-  EC2Stack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/ec2.yaml
-      TimeoutInMinutes: 20
-      Parameters:
-        EnvironmentType: !Ref EnvironmentType
-        VpcId: !GetAtt VpcStack.Outputs.VpcId
-        SubnetId: !GetAtt VpcStack.Outputs.PublicSubnet1
-        WebServerInstanceProfile: !GetAtt IamStack.Outputs.WebServerInstanceProfile
-        RDSEndpointAddress: !GetAtt RDSStack.Outputs.RDSEndpointAddress
-        RDSMasterUsername: !Ref RDSMasterUsername
-        RDSMasterUserPassword: !Ref RDSMasterUserPassword
-        WebServerSecurityGroup: !GetAtt VpcStack.Outputs.EC2SecurityGroupName
-        AmiID: !Ref AmiID
-    DependsOn:
-      - RDSStack
+  # EC2Stack:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/ec2.yaml
+  #     TimeoutInMinutes: 20
+  #     Parameters:
+  #       EnvironmentType: !Ref EnvironmentType
+  #       VpcId: !GetAtt VpcStack.Outputs.VpcId
+  #       SubnetId: !GetAtt VpcStack.Outputs.PublicSubnet1
+  #       WebServerInstanceProfile: !GetAtt IamStack.Outputs.WebServerInstanceProfile
+  #       RDSEndpointAddress: !GetAtt RDSStack.Outputs.RDSEndpointAddress
+  #       RDSMasterUsername: !Ref RDSMasterUsername
+  #       RDSMasterUserPassword: !Ref RDSMasterUserPassword
+  #       WebServerSecurityGroup: !GetAtt VpcStack.Outputs.EC2SecurityGroupName
+  #   DependsOn:
+  #     - RDSStack
         
-Outputs:
-  WebsiteURL:
-    Value: !GetAtt EC2Stack.Outputs.WebsiteURL
+# Outputs:
+#   WebsiteURL:
+#     Value: !GetAtt EC2Stack.Outputs.WebsiteURL
 
