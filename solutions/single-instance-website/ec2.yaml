@@ -28,7 +28,7 @@ Parameters:
   AmiID:
     Type: String
     Description: 'The ID of the AMI.'
-    Default: ami-0aa7d40eeae50c9a9 #Amazon Linux 2 Kernel 5.10 AMI 2.0.20230119.1 x86_64 HVM gp2
+    Default: ami-0715c1897453cabd1 #Amazon Linux 2023 AMI 2023.0.20230517.1 x86_64 HVM kernel-6.1
 
   VpcId:
     Type: AWS::EC2::VPC::Id
@@ -65,6 +65,25 @@ Mappings:
       InstanceType: t2.small
 
 Resources:
+  # SSMIAMRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service:
+  #               - ec2.amazonaws.com
+  #           Action:
+  #             - sts:AssumeRole
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+  # WebServerInstanceProfile:
+  #   Type: AWS::IAM::InstanceProfile
+  #   Properties:
+  #     Path: /
+  #     Roles:
+  #       - !Ref SSMIAMRole
   WebServerInstance:
     Type: AWS::EC2::Instance
     Properties:
@@ -74,23 +93,3 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join [ '-', [ !Ref EnvironmentType, webserver ] ]
-  WebServerEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-      InstanceId: !Ref WebServerInstance
-    DependsOn:
-      - WebServerInstance
-
-Outputs:
-  WebServerPublicDNS:
-    Description: 'Public DNS of EC2 instance'
-    Value: !GetAtt WebServerInstance.PublicDnsName
-
-  WebServerElasticIP:
-    Description: Elastic IP associated with the web server EC2 instance
-    Value: !Ref WebServerEIP
-
-  WebsiteURL:
-    Value: !Sub http://${WebServerEIP}
-    Description: Application URL

@@ -104,22 +104,22 @@ Resources:
       - VpcStack
       - IamStack
   
-  EC2Stack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/ec2.yaml
-      TimeoutInMinutes: 20
-      Parameters:
-        EnvironmentType: !Ref EnvironmentType
-        VpcId: !GetAtt VpcStack.Outputs.VpcId
-        SubnetId: !GetAtt VpcStack.Outputs.PublicSubnet1
-        WebServerInstanceProfile: !GetAtt IamStack.Outputs.WebServerInstanceProfile
-        RDSEndpointAddress: !GetAtt RDSStack.Outputs.RDSEndpointAddress
-        RDSMasterUsername: !Ref RDSMasterUsername
-        RDSMasterUserPassword: !Ref RDSMasterUserPassword
-        WebServerSecurityGroup: !GetAtt VpcStack.Outputs.EC2SecurityGroupName
-    DependsOn:
-      - RDSStack
+  # EC2Stack:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/ec2.yaml
+  #     TimeoutInMinutes: 20
+  #     Parameters:
+  #       EnvironmentType: !Ref EnvironmentType
+  #       VpcId: !GetAtt VpcStack.Outputs.VpcId
+  #       SubnetId: !GetAtt VpcStack.Outputs.PublicSubnet1
+  #       WebServerInstanceProfile: !GetAtt IamStack.Outputs.WebServerInstanceProfile
+  #       RDSEndpointAddress: !GetAtt RDSStack.Outputs.RDSEndpointAddress
+  #       RDSMasterUsername: !Ref RDSMasterUsername
+  #       RDSMasterUserPassword: !Ref RDSMasterUserPassword
+  #       WebServerSecurityGroup: !GetAtt VpcStack.Outputs.EC2SecurityGroupName
+  #   DependsOn:
+  #     - RDSStack
         
 # Outputs:
 #   WebsiteURL:
