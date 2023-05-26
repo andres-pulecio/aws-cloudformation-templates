@@ -65,118 +65,34 @@ Mappings:
       InstanceType: t2.small
 
 Resources:
-  # WebServerSecurityGroup:
-  #   Type: AWS::EC2::SecurityGroup
+  # SSMIAMRole:
+  #   Type: AWS::IAM::Role
   #   Properties:
-  #     GroupDescription: Enable HTTP and HTTPS access
-  #     SecurityGroupIngress:
-  #       - IpProtocol: tcp
-  #         FromPort: 80
-  #         ToPort: 80
-  #         CidrIp: 0.0.0.0/0
-  #     SecurityGroupEgress:
-  #       - IpProtocol: tcp
-  #         FromPort: 80
-  #         ToPort: 80
-  #         CidrIp: 0.0.0.0/0
-  #       - IpProtocol: tcp
-  #         FromPort: 443
-  #         ToPort: 443
-  #         CidrIp: 0.0.0.0/0
-  #     VpcId: !Ref VpcId
+  #     AssumeRolePolicyDocument:
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service:
+  #               - ec2.amazonaws.com
+  #           Action:
+  #             - sts:AssumeRole
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+  # WebServerInstanceProfile:
+  #   Type: AWS::IAM::InstanceProfile
+  #   Properties:
+  #     Path: /
+  #     Roles:
+  #       - !Ref SSMIAMRole
   WebServerInstance:
     Type: AWS::EC2::Instance
-    # Metadata:
-    #   AWS::CloudFormation::Init:
-    #     config:
-    #       packages:
-    #         yum:
-    #           httpd: []
-    #           php: []
-    #       files:
-    #         /var/www/html/index.php:
-    #           content: |
-    #             <!DOCTYPE html>
-    #             <html>
-    #             <body>
-    #               <center>
-    #                 <?php
-    #                 # Get the instance ID from meta-data and store it in the $instance_id variable
-    #                 $url = "http://169.254.169.254/latest/meta-data/instance-id";
-    #                 $instance_id = file_get_contents($url);
-    #                 # Get the instance's availability zone from metadata and store it in the $zone variable
-    #                 $url = "http://169.254.169.254/latest/meta-data/placement/availability-zone";
-    #                 $zone = file_get_contents($url);
-    #                 # Get the instance AMI ID and store it in the $ami_id variable
-    #                 $url = "http://169.254.169.254/latest/meta-data/ami-id";
-    #                 $ami_id = file_get_contents($url);
-    #                 ?>
-    #                 <h2>EC2 Instance ID: <?php echo $instance_id ?></h2>
-    #                 <h2>Availability Zone: <?php echo $zone ?></h2>
-    #                 <h2>AMI ID: <?php echo $ami_id ?></h2>
-    #               </center>
-    #             </body>
-    #             </html>
-    #           mode: 000644
-    #           owner: apache
-    #           group: apache
-
-    #         /etc/cfn/cfn-hup.conf:
-    #           content: !Sub |
-    #             [main]
-    #             stack=${AWS::StackId}
-    #             region=${AWS::Region}
-    #             interval=1
-    #           mode: 000400
-    #           owner: root
-    #           group: root
-
-    #         /etc/cfn/hooks.d/cfn-auto-reloader.conf:
-    #           content: !Sub |
-    #             [cfn-auto-reloader-hook]
-    #             triggers=post.update
-    #             path=Resources.WebServerInstance.Metadata.AWS::CloudFormation::Init
-    #             action=/opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WebServerInstance --region ${AWS::Region}
-    #             runas=root
-
-    #       services:
-    #         sysvinit:
-    #           httpd:
-    #             enabled: true
-    #             ensureRunning: true
-
-    #           cfn-hup:
-    #             enabled: true
-    #             ensureRunning: true
-    #             files:
-    #               - /etc/cfn/cfn-hup.conf
-    #               - /etc/cfn/hooks.d/cfn-auto-reloader.conf
-
-    # DependsOn:
-    #   - WebServerSecurityGroup
     Properties:
-      SubnetId: !Ref SubnetId
       IamInstanceProfile: !Ref WebServerInstanceProfile
       ImageId: !Ref AmiID
       InstanceType: !FindInMap [EnvironmentToInstanceType, !Ref EnvironmentType, InstanceType]
-      SecurityGroupIds:
-        - !Ref WebServerSecurityGroup
       Tags:
         - Key: Name
-          Value: !Join [ ' ', [ !Ref EnvironmentType, Web Server ] ]
-      UserData:
-        Fn::Base64:
-          !Sub |
-          #!/bin/bash -xe
-
-          sudo apt update 
-          sudo apt install mysql-server
-          sudo systemctl start mysql
-          sudo systemctl enable mysql
-          sudo apt install apache2
-          sudo systemctl start apache2
-          sudo systemctl enable apache2
-          export MYSQL_HOST=${RDSEndpointAddress}
+          Value: !Join [ '-', [ !Ref EnvironmentType, webserver ] ]
         
     # CreationPolicy:
     #   ResourceSignal:
@@ -184,23 +100,23 @@ Resources:
     #     Timeout: PT10M
 
 
-  WebServerEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-      InstanceId: !Ref WebServerInstance
-    DependsOn:
-      - WebServerInstance
+  # WebServerEIP:
+  #   Type: AWS::EC2::EIP
+  #   Properties:
+  #     Domain: vpc
+  #     InstanceId: !Ref WebServerInstance
+  #   DependsOn:
+  #     - WebServerInstance
 
-Outputs:
-  WebServerPublicDNS:
-    Description: 'Public DNS of EC2 instance'
-    Value: !GetAtt WebServerInstance.PublicDnsName
+# Outputs:
+#   WebServerPublicDNS:
+#     Description: 'Public DNS of EC2 instance'
+#     Value: !GetAtt WebServerInstance.PublicDnsName
 
-  WebServerElasticIP:
-    Description: Elastic IP associated with the web server EC2 instance
-    Value: !Ref WebServerEIP
+#   WebServerElasticIP:
+#     Description: Elastic IP associated with the web server EC2 instance
+#     Value: !Ref WebServerEIP
 
-  WebsiteURL:
-    Value: !Sub http://${WebServerEIP}
-    Description: Application URL
+#   WebsiteURL:
+#     Value: !Sub http://${WebServerEIP}
+#     Description: Application URL
