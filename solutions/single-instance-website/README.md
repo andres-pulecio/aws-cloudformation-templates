@@ -1,4 +1,4 @@
-# Single Instance Website
+# Nested stacks
 This template create:
 * The root stack (which is also a parent stack for the first level stacks). This root stack will contain all the other stacks.
 * The VPC stack. This contains a simple VPC template which the EC2 instance will be placed into.
@@ -22,5 +22,4 @@ If you don't have S3 bucket, please go back to [S3simple.yaml](../../S3/S3simple
 
 *The following diagram represents high level overview of the infrastructure:*
 
-![lab1-architecture](https://user-images.githubusercontent.com/53886913/220818740-7b1037be-9233-46e3-b818-5495e515bfe3.jpg)
-
+![diagram](https://user-images.githubusercontent.com/53886913/219972473-06de50aa-ee75-43de-9f55-6b6a099b12f0.png)
