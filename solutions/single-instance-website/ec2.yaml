@@ -111,16 +111,16 @@ Resources:
                 path=Resources.WebServerInstance.Metadata.AWS::CloudFormation::Init
                 action=/opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WebServerInstance --region ${AWS::Region}
                 runas=root
-          # commands: 
+          commands: 
           #   echo: 
           #     command: "echo \"$MYSQLHOST\" > endpoint.txt"
           #     env: 
           #       MYSQLHOST: !Ref RDSEndpointAddress
           #     cwd: "/etc/"            
-          #   export: 
-          #     command: "MYSQL_HOST=\"$MYSQLHOST\" >> /home/ssm-user/.bash_profile"
-          #     env: 
-          #       MYSQLHOST: !Ref RDSEndpointAddress
+            export: 
+              command: "MYSQL_HOST=\"$MYSQLHOST\" >> /home/ssm-user/.bash_profile"
+              env: 
+                MYSQLHOST: !Ref RDSEndpointAddress
           services:
             sysvinit:
               httpd:
@@ -155,10 +155,6 @@ Resources:
           # Call cfn-signal script to send a signal with exit code
           /opt/aws/bin/cfn-signal --exit-code $? --stack ${AWS::StackName} --resource WebServerInstance --region ${AWS::Region}
           # Install mysql-server
-          sudo yum install -y mysql
-          # export MYSQL_HOST=my-db-instance.c6z9trgtwj6l.us-east-1.rds.amazonaws.com
-          # export MYSQL_HOST1=$(cat /etc/endpoint.txt)
-
           amazon-linux-extras install -y lamp-mariadb10.2-php7.2 php7.2
           yum -y install mariadb-server wget nmap
           systemctl enable mysqld
@@ -167,6 +163,10 @@ Resources:
           systemctl start httpd
           systemctl enable mariadb
           systemctl start mariadb
+          sudo yum install -y mysql
+
+          mysql -h my-db-instance.c6z9trgtwj6l.us-east-1.rds.amazonaws.com  --user=myusername --password=mypassword mydatabase 
+          # export MYSQL_HOST1=$(cat /etc/endpoint.txt)
 
     CreationPolicy:
       ResourceSignal:
