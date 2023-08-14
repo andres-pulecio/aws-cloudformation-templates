@@ -111,16 +111,16 @@ Resources:
                 path=Resources.WebServerInstance.Metadata.AWS::CloudFormation::Init
                 action=/opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WebServerInstance --region ${AWS::Region}
                 runas=root
-          commands: 
+          # commands: 
           #   echo: 
           #     command: "echo \"$MYSQLHOST\" > endpoint.txt"
           #     env: 
           #       MYSQLHOST: !Ref RDSEndpointAddress
           #     cwd: "/etc/"            
-            export: 
-              command: "MYSQL_HOST=\"$MYSQLHOST\" >> /home/ssm-user/.bash_profile"
-              env: 
-                MYSQLHOST: !Ref RDSEndpointAddress
+            # export: 
+            #   command: "MYSQL_HOST=\"$MYSQLHOST\" >> /home/ssm-user/.bash_profile"
+            #   env: 
+            #     MYSQLHOST: !Ref RDSEndpointAddress
           services:
             sysvinit:
               httpd:
@@ -143,31 +143,28 @@ Resources:
         - !Ref WebServerSecurityGroup
       Tags:
         - Key: Name
-          Value: !Join [ ' ', [ !Ref EnvironmentType, Web Server ] ]
+          Value: !Join [ ' ', [ !Ref EnvironmentType, Simple Web Server ] ]
       UserData:
         Fn::Base64:
           !Sub |
           #!/bin/bash -xe
-          # Update aws-cfn-bootstrap to the latest
-          # yum install -y aws-cfn-bootstrap 
-          # Call cfn-init script to install files and packages
+          systemctl enable amazon-ssm-agent
+          systemctl start amazon-ssm-agent
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource WebServerInstance --region ${AWS::Region}
-          # Call cfn-signal script to send a signal with exit code
           /opt/aws/bin/cfn-signal --exit-code $? --stack ${AWS::StackName} --resource WebServerInstance --region ${AWS::Region}
-          # Install mysql-server
           amazon-linux-extras install -y lamp-mariadb10.2-php7.2 php7.2
           yum -y install mariadb-server wget nmap
-          systemctl enable mysqld
-          systemctl start mysqld
-          systemctl enable httpd
-          systemctl start httpd
+          sudo yum install -y mysql
           systemctl enable mariadb
           systemctl start mariadb
-          sudo yum install -y mysql
-
-          mysql -h my-db-instance.c6z9trgtwj6l.us-east-1.rds.amazonaws.com  --user=myusername --password=mypassword mydatabase 
-          # export MYSQL_HOST1=$(cat /etc/endpoint.txt)
-
+          systemctl enable httpds
+          systemctl start httpd
+          touch ~/script.log
+          wget -P ~/ https://raw.githubusercontent.com/andres-pulecio/aws-cloudformation-templates/main/solutions/single-instance-website/simpleWeb.sql
+          chmod +x ~/simpleWeb.sql
+          sleep 2
+          mysql -h my-db-instance.c6z9trgtwj6l.us-east-1.rds.amazonaws.com -u myusername -p mypassword mydatabase < ~/simpleWeb.sql
+          touch ~/testscript.log
     CreationPolicy:
       ResourceSignal:
         Count: 1

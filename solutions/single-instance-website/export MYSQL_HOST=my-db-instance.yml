@@ -1,3 +1,0 @@
-export MYSQL_HOST=my-db-instance.c6z9trgtwj6l.us-east-1.rds.amazonaws.com
-echo $MYSQL_HOST
-mysql --user=myusername --password=mypassword mydatabase
