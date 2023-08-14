@@ -1,0 +1,1058 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: VPC with fully built cafe application on Cloud9 instance in a public subnet and empty public subnet.
+
+Parameters:
+
+  KeyName:
+    Type: String
+    Description: the keypair that Vocareum will use to launch EC2 instances
+    Default: default-lab-key
+
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+
+  LabUserId:
+    Default: arn:aws:sts::012345678:assumed-role/vocareum-role/username
+    Description: "session user ARN"
+    Type: String
+
+  QuestionTableRead:
+    Description: Read capacity units for DynamoDB table
+    Type: String
+    MinLength: '1'
+    MaxLength: '12'
+    AllowedPattern: '[0-9]*'
+    Default: '1'
+
+  QuestionTableWrite:
+    Description: Write capacity units for DynamoDB table
+    Type: String
+    MinLength: '1'
+    MaxLength: '6'
+    AllowedPattern: '[0-9]*'
+    Default: '1'
+
+Conditions:
+  InUsEast1: !Equals
+    - !Ref 'AWS::Region'
+    - us-east-1
+
+Resources:
+
+###########
+# VPC with Internet Gateway
+###########
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: Lab VPC
+
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Lab IGW
+
+  VPCtoIGWConnection:
+    Type: AWS::EC2::VPCGatewayAttachment
+    DependsOn:
+      - IGW
+      - VPC
+    Properties:
+      InternetGatewayId: !Ref IGW
+      VpcId: !Ref VPC
+
+###########
+# Public Route Table
+###########
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Public Route Table
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn:
+      - PublicRouteTable
+      - VPCtoIGWConnection
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+      RouteTableId: !Ref PublicRouteTable
+
+###########
+# Private Route Table
+###########
+
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Private Route Table 1
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Private Route Table 2
+
+###########
+# Public Subnet
+###########
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      MapPublicIpOnLaunch: true
+      CidrBlock: 10.0.0.0/24
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: Public Subnet
+
+  PublicRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - PublicRouteTable
+      - PublicSubnet
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet
+
+###########
+# Private Subnet
+###########
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/23
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: Private Subnet 1
+
+  PrivateRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - PrivateRouteTable1
+      - PrivateSubnet1
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.4.0/23
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: Private Subnet 2
+
+  PrivateRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - PrivateRouteTable2
+      - PrivateSubnet2
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
+
+###########
+# Resources for RDS
+###########
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Lab-DB-Subnet-Group
+      DBSubnetGroupName: Lab-DB-Subnet-Group
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      Tags:
+        -
+          Key: Name
+          Value: DBSubnetGroup
+
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: dbSG
+      GroupName: dbSG
+      VpcId: !Ref VPC
+
+###########
+# LAMP instance with Cloud9 support built in
+###########
+
+  CafeInstance:
+    Type: 'AWS::EC2::Instance'
+    DependsOn:
+      - VPC
+      - CafeSG
+      - PublicSubnet
+    Properties:
+      ImageId: !Ref LatestAmiId
+      IamInstanceProfile: CafeRole
+      InstanceType: t2.micro
+      NetworkInterfaces:
+        - DeviceIndex: '0'
+          AssociatePublicIpAddress: 'true'
+          SubnetId: !Ref PublicSubnet
+          GroupSet:
+            - !Ref CafeSG
+      SourceDestCheck: 'false'
+      Tags:
+        - Key: Name
+          Value: CafeServer
+      KeyName: !Ref 'KeyName'
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash
+            yum -y update
+            #### install ssm - already installed on AL2 so try commenting out this line
+            #sudo yum install -y https://s3.$region.amazonaws.com/amazon-ssm-$region/latest/linux_amd64/amazon-ssm-agent.rpm
+            systemctl enable amazon-ssm-agent
+            systemctl start amazon-ssm-agent
+            #systemctl restart amazon-ssm-agent
+            #### install cafe app
+            amazon-linux-extras install -y lamp-mariadb10.2-php7.2 php7.2
+            yum -y install httpd mariadb-server wget nmap
+            systemctl enable httpd
+            systemctl start httpd
+            systemctl enable mariadb
+            systemctl start mariadb
+            echo '<html><h1>Hello From Your Web Server!</h1></html>' > /var/www/html/index.html
+            find /var/www -type d -exec chmod 2775 {} \;
+            find /var/www -type f -exec chmod 0664 {} \;
+            echo '<?php phpinfo(); ?>' > /var/www/html/phpinfo.php
+            usermod -a -G apache ec2-user
+            chown -R ec2-user:apache /var/www
+            chmod 2775 /var/www
+            wget https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/ILT-TF-200-ACACAD-20-EN/mod5-challenge/setup.tar.gz
+            tar -zxvf setup.tar.gz
+            wget https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/ILT-TF-200-ACACAD-20-EN/mod5-challenge/db.tar.gz
+            tar -zxvf db.tar.gz
+            wget https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/ILT-TF-200-ACACAD-20-EN/mod5-challenge/cafe.tar.gz
+            tar -zxvf cafe.tar.gz -C /var/www/html/
+            cd setup
+            echo "Setting the application parameter values in the Parameter Store..."
+            #first get the region
+            region="us-east-1"
+            publicDNS=$(curl http://169.254.169.254/latest/meta-data/public-hostname)
+            echo "Public DNS =" $publicDNS
+            #the set ssm params
+            aws ssm put-parameter --name "/cafe/showServerInfo" --type "String" --value "false" --description "Show Server Information Flag" --overwrite --region $region
+            aws ssm put-parameter --name "/cafe/timeZone" --type "String" --value "America/New_York" --description "Time Zone" --overwrite --region $region
+            aws ssm put-parameter --name "/cafe/currency" --type "String" --value '$' --description "Currency Symbol" --overwrite --region $region
+            aws ssm put-parameter --name "/cafe/dbUrl" --type "String" --value $publicDNS --description "Database URL" --overwrite --region $region
+            aws ssm put-parameter --name "/cafe/dbName" --type "String" --value "cafe_db" --description "Database Name" --overwrite --region $region
+            aws ssm put-parameter --name "/cafe/dbUser" --type "String" --value "root" --description "Database User Name" --overwrite --region $region
+            aws ssm put-parameter --name "/cafe/dbPassword" --type "String" --value "Re:Start!9" --description "Database Password" --overwrite --region $region
+            #DONE running set-app-parameters.sh steps inline
+            #Configure the database
+            cd ../db/
+            ./set-root-password.sh
+            ./create-db.sh
+            #insert 24 rows of orders
+            wget https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/ILT-TF-200-ACACAD-20-EN/mod5-challenge/CafeDbDump.sql
+            sleep 2
+            sec="Re:Start!9"
+            mysql -u root -p$sec < CafeDbDump.sql
+            rm CafeDbDump.sql
+            echo
+            echo "START OF CLOUD9 installations"
+            echo
+            echo "yum installing gcc and nodejs"
+            echo
+            curl --silent --location https://rpm.nodesource.com/setup_12.x | bash -
+            yum install -y gcc nodejs
+            #install cloud9 as the ec2-user
+            su ec2-user -c 'cd /home/ec2-user; wget https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/ILT-TF-200-ACACAD-20-EN/mod5-challenge/c9-install.sh; chmod +x c9-install.sh; ./c9-install.sh'
+            rm /home/ec2-user/c9-install.sh
+            ln -s /var/www/ /home/ec2-user/www
+            mv /setup /home/ec2-user/
+            chown -R ec2-user:ec2-user /home/ec2-user/setup
+            cat <<EOF >/home/ec2-user/set-key.sh
+            #!/bin/bash
+            if [[ "\$1" == "ssh-rsa" ]] && [[ "\$2" != "" ]]  && [[ "\$3" != "" ]]  ; then
+              echo \$1 \$2 \$3 >> /home/ec2-user/.ssh/authorized_keys
+              echo "Updated authorized keys."
+              exit 1
+            else
+              echo "Usage: type in ./set-key.sh followed by a space and then paste in the SSH key value. Then click ENTER."
+              exit 1
+            fi
+            EOF
+            chown ec2-user:ec2-user /home/ec2-user/set-key.sh
+            chmod +x /home/ec2-user/set-key.sh
+            hostnamectl set-hostname cafeserver
+
+###########
+# SG for LAMP instance
+###########
+
+  CafeSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    DependsOn: VPC
+    Properties:
+      GroupDescription: Enable SSH, HTTP access
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: CafeSG
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+
+###########
+# IAM Role for App
+###########
+
+  CafeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles: [!Ref CafeRole]
+      InstanceProfileName: !Ref CafeRole
+
+  CafeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CafeRole
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: ssm:*
+                Resource: 'arn:aws:ssm:*:*:parameter/*'
+        - PolicyName: importkeyAndSsmSm
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: ec2:ImportKeyPair
+                Resource: '*'
+
+
+############
+# Multiple Choice-related RESOURCES
+############
+
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "qnum"
+          AttributeType: S
+      KeySchema:
+        - AttributeName: "qnum"
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: !Ref 'QuestionTableRead'
+        WriteCapacityUnits: !Ref 'QuestionTableWrite'
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      TableName: answers
+
+  RecordAnswersLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: !Sub |
+          console.log('Loading event');
+          var AWS = require('aws-sdk');
+          var dynamodb = new AWS.DynamoDB();
+          const querystring = require('querystring');
+          exports.handler = function(event, context, callback) {
+              console.log("Request received:\n", JSON.stringify(event));
+              console.log("Context received:\n", JSON.stringify(context));
+              const params = querystring.parse(event.body);
+              var tableName = "answers";
+              var datetime = new Date().getTime().toString();
+              var qnum= params.qnum;
+              var answer = params.answer;
+              dynamodb.putItem({
+                      "TableName": tableName,
+                      "Item": {
+                          "qnum": {
+                              "S": qnum
+                          },
+                          "answer": {
+                              "S": answer
+                          }
+                      }
+                  }, function(err, data) {
+                      if (err) {
+                          context.fail('ERROR: Dynamo failed: ' + err);
+                      } else {
+                          console.log('Dynamo Success: ' + JSON.stringify(data, null, '  '));
+                          context.succeed('Answer submitted successfully. Click the browser back button to submit an answer to another question.');
+                      }
+                  });
+              // Generate HTML.
+              const html = '<html><p>Answer to question ' + qnum + ' submitted successfully.</p><p>Use the browser back button to return to the question list to submit an answer to any other question.</p></html>';
+
+              // // Return HTML as the result.
+              callback(null, html);
+          }
+      FunctionName: RecordAnswers
+      Handler: index.handler
+      Role: !GetAtt 'RecordAnswersLambdaRole.Arn'
+      Runtime: nodejs16.x
+      Timeout: 300
+
+  RecordAnswersLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: RecordAnswers
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+  DynamoDBFullRolePolicies:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: RecordAnswersFullDynamo
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:*
+              - logs:*
+              - apigateway:*
+            Resource:
+              - '*'
+      Roles:
+        - !Ref RecordAnswersLambdaRole
+
+############
+# API Gateway resources
+############
+
+  ApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    DependsOn:
+      - RecordAnswersLambdaFunction
+      - ApiGatewayLambdaInvokeRole
+    Properties:
+      Name: RecordAnswersApi
+      Description: "API Gateway collects student answers"
+      Body:
+        swagger: "2.0"
+        info:
+          version: "2020-07-10T17:39:23Z"
+          title: "RecordAnswersApi"
+        host: "${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com"
+        basePath: "/RecordAnswers"
+        schemes:
+        - "https"
+        paths:
+          /:
+            post:
+              consumes:
+              - "application/x-www-form-urlencoded"
+              produces:
+              - "text/html"
+              responses:
+                "200":
+                  headers:
+                    Content-Type:
+                      type: "string"
+              x-amazon-apigateway-integration:
+                uri: !Sub arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:${AWS::AccountId}:function:RecordAnswers/invocations
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Content-Type: "'text/html'"
+                    responseTemplates:
+                      text/html: "$input.path('$')"
+                requestTemplates:
+                  application/x-www-form-urlencoded: "{\"body\": \"$input.body\"}"
+                passthroughBehavior: "when_no_templates"
+                httpMethod: "POST"
+                contentHandling: "CONVERT_TO_TEXT"
+                type: "aws"
+
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref ApiGateway
+      StageName: RecordAnswers
+
+############
+# API Gateway permission to invoke Lambda
+############
+
+  PermissionForApiGatewayToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: RecordAnswers
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*/POST/"
+
+  ApiGatewayLambdaInvokeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: apiInvokeLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                  - logs:*
+                Resource: "*"
+
+############
+# Hosting of the questions.html file
+############
+
+  htmlBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      WebsiteConfiguration:
+       IndexDocument: questions.html
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: False
+        BlockPublicPolicy: False
+        IgnorePublicAcls: False
+        RestrictPublicBuckets: False
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - HEAD
+              - POST
+              - DELETE
+            AllowedOrigins:
+              - '*'
+
+  tweekHtmlFileLambda:
+    Type: 'AWS::Lambda::Function'
+    DependsOn: ApiGateway
+    Properties:
+      Description: updates the questions.html file with correct API endpoint.
+      Code:
+        ZipFile: !Sub |
+          import boto3, os, sys, subprocess, time, random, urllib3, urllib.request
+          def lambda_handler(event, context):
+            # TO DO: set the urlRoot to the dir in S3 large objects that hosts the questions HTML files in each language.
+            # Be sure to keep the trailing backslash.
+            urlRoot = "http://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/ILT-TF-200-ACACAD-20-EN/mod5-challenge/"
+
+            #NOTE: DO NOT MODIFY ANY CODE BELOW THIS LINE unless you need to add support for a language not already listed here
+            pages = ['questions.html', 'questions-es.html', 'questions-ja.html', 'questions-ko.html', 'questions-pt.html', 'questions-zh.html']
+            pagesDict = {"questions.html": "", "questions-es.html": "", "questions-ja.html": "", "questions-ko.html": "", "questions-pt.html": "", "questions-zh.html": ""}
+
+            #Check which languages the questions have been translated into
+            for item in pages:
+              url = urlRoot + item
+              print(url)
+              http = urllib3.PoolManager()
+              r = http.request('GET', url)
+              if (r.status == 200 ):
+                pagesDict[item] = 'y'
+              else:
+                pagesDict[item] = 'n'
+            for item in pagesDict.items():
+              print(item)
+
+            #copy each page to S3, only setting hyperlinks in each localized page for langs that are available
+            for key, value in pagesDict.items():
+              if (value == 'y'):
+                url = urlRoot + key
+                print("Processing " + url + " page.")
+                response = urllib.request.urlopen(url)
+                data = response.read()
+                text = data.decode('utf-8')
+                # Find/replace the REPLACE substrings with the apiEndpoint variable
+                endPoint = os.environ['apiEndpoint']
+                text = text.replace('REPLACE', str(endPoint))
+
+                if (pagesDict['questions-es.html'] == 'y'):
+                  text = text.replace('REPL-ES', str('| <a href="questions-es.html">Spanish</a>'))
+                else:
+                  text = text.replace('REPL-ES', str(''))
+
+                if (pagesDict['questions-ja.html'] == 'y'):
+                  text = text.replace('REPL-JA', str('| <a href="questions-ja.html">Japanese</a>'))
+                else:
+                  text = text.replace('REPL-JA', str(''))
+
+                if (pagesDict['questions-ko.html'] == 'y'):
+                  text = text.replace('REPL-KO', str('| <a href="questions-ko.html">Korean</a>'))
+                else:
+                  text = text.replace('REPL-KO', str(''))
+
+                if (pagesDict['questions-pt.html'] == 'y'):
+                  text = text.replace('REPL-PT', str('| <a href="questions-pt.html">Portuguese</a>'))
+                else:
+                  text = text.replace('REPL-PT', str(''))
+
+                if (pagesDict['questions-zh.html'] == 'y'):
+                  text = text.replace('REPL-ZH', str('| <a href="questions-zh.html">Chinese</a>'))
+                else:
+                  text = text.replace('REPL-ZH', str(''))
+
+                bucketName = os.environ['writeToBucketName']
+                # Write the resulting string as a file to the S3 bucket in this account
+                s3 = boto3.resource('s3')
+                print("Writing " + key + " file to s3")
+                result = s3.Object(bucketName, key).put(Body=text, ACL='public-read', ContentType='text/html')
+                print(result)
+      Environment:
+        Variables:
+          writeToBucketName : !Ref htmlBucket
+          apiEndpoint: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/RecordAnswers
+      Handler: index.lambda_handler
+      Role: !GetAtt 'QuestionsSecLambdaExecutionRole.Arn'
+      Runtime: python3.9
+      Timeout: 300
+
+  QuestionsSecLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: customLambdaPol
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                  - logs:*
+                Resource: "*"
+
+  ScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: ScheduledRule
+      ScheduleExpression: rate(1 minute)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt 'tweekHtmlFileLambda.Arn'
+          Id: TargetFunctionV1
+
+  PermissionForEventsToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref tweekHtmlFileLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ScheduledRule.Arn
+
+###########
+# awsstudent user & policy for Cloud9 in Vocareum
+###########
+  IAMUser:
+    Type: 'AWS::IAM::User'
+    Properties:
+      UserName: awsstudent
+
+  IAMPolicy:
+    Type: 'AWS::IAM::ManagedPolicy'
+    DependsOn: IAMUser
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement: [
+          {
+            "Sid": "StudentPolicy",
+            "Action": [
+              "cloudformation:*",
+              "cloud9:*",
+              "iam:Get*",
+              "iam:List*",
+              "iam:CreateServiceLinkedRole",
+              "iam:PassRole",
+              "kms:List*",
+              "kms:Describe*",
+              "logs:List*",
+              "logs:Describe*",
+              "logs:Get*",
+              "logs:StartQuery",
+              "logs:StopQuery",
+              "logs:TestMetricFilter",
+              "logs:FilterLogEvents",
+              "lambda:*",
+              "ec2:*Address*",
+              "ec2:Cancel*",
+              "ec2:Describe*",
+              "ec2:*Gateway",
+              "ec2:Get*",
+              "ec2:*Image*",
+              "ec2:*Network*",
+              "ec2:*Route*",
+              "ec2:*SecurityGroup*",
+              "ec2:*Snapshot*",
+              "ec2:*Subnet*",
+              "ec2:*Vpc*",
+              "ec2:*Vpn*",
+              "ec2:DeleteFleets",
+              "ec2:ResetEbsDefaultKmsKeyId",
+              "ec2:ReportInstanceStatus",
+              "ec2:ImportKeyPair",
+              "ec2:StopInstances",
+              "ec2:ProvisionByoipCidr",
+              "ec2:WithdrawByoipCidr",
+              "ec2:AssociateDhcpOptions",
+              "ec2:ConfirmProductInstance",
+              "ec2:ConfirmProductInstance",
+              "ec2:ModifyFpgaImageAttribute",
+              "ec2:EnableEbsEncryptionByDefault",
+              "ec2:SendDiagnosticInterrupt",
+              "ec2:AssociateIamInstanceProfile",
+              "ec2:ReplaceIamInstanceProfileAssociation",
+              "ec2:CreateDhcpOptions",
+              "ec2:DeleteDhcpOptions",
+              "ec2:CreateKeyPair",
+              "ec2:DeleteKeyPair",
+              "ec2:BundleInstance",
+              "ec2:CreateTags",
+              "ec2:DisassociateIamInstanceProfile",
+              "ec2:AttachVolume",
+              "ec2:CreateInstanceExportTask",
+              "ec2:MonitorInstances",
+              "ec2:UnmonitorInstances",
+              "ec2:DetachVolume",
+              "ec2:DeleteVolume",
+              "ec2:DeleteLaunchTemplate*",
+              "ec2:CreateFlowLogs",
+              "ec2:DeleteFlowLogs",
+              "ec2:ModifyIdentityIdFormat",
+              "ec2:ModifyIdFormat",
+              "ec2:AdvertiseByoipCidr",
+              "ec2:DeprovisionByoipCidr",
+              "ec2:DeleteTags",
+              "ec2:TerminateInstances",
+              "ec2:DisableEbsEncryptionByDefault",
+              "ec2:ModifyEbsDefaultKmsKeyId",
+              "rds:Describe*",
+              "rds:List*",
+              "rds:Download*",
+              "rds:Add*",
+              "rds:RemoveTag*",
+              "rds:RemoveSourceIdentifierFromSubscription",
+              "rds:RemoveRoleFromDBInstance",
+              "rds:AuthorizeDBSecurityGroupIngress",
+              "rds:CreateDBInstance",
+              "rds:CreateDBSubnetGroup",
+              "rds:CreateOptionGroup",
+              "rds:CreateDBParameterGroup",
+              "rds:CreateDBSecurityGroup",
+              "rds:CreateDBSnapshot",
+              "rds:CreateEventSubscription",
+              "rds:Delete*",
+              "rds:ResetDBParameterGroup",
+              "rds:CopyDBParameterGroup",
+              "rds:ModifyDBParameterGroup",
+              "rds:ModifyDBSnapshot",
+              "rds:ModifyDBSnapshotAttribute",
+              "rds:ModifyDBSubnetGroup",
+              "rds:ModifyEventSubscription",
+              "rds:ModifyOptionGroup",
+              "rds:RevokeDBSecurityGroupIngress",
+              "rds:StopDBInstance",
+              "rds:CopyOptionGroup",
+              "rds:RebootDBInstance",
+              "rds:ApplyPendingMaintenanceAction",
+              "cloudwatch:Describe*",
+              "cloudwatch:Get*",
+              "cloudwatch:List*",
+              "ssm:List*",
+              "ssm:Describe*",
+              "ssm:Get*",
+              "ssm:PutInventory",
+              "ssm:PutComplianceItems",
+              "ssm:PutConfigurePackageResult",
+              "ssm:UpdateAssociationStatus",
+              "ssm:UpdateInstanceAssociationStatus",
+              "ssm:UpdateInstanceInformation",
+              "ssm:CancelCommand",
+              "ssm:SendCommand",
+              "ssm:StartAutomationExecution",
+              "ssm:StartSession",
+              "ssm:TerminateSession",
+              "ssm:ResumeSession",
+              "ssm:DescribeSessions",
+              "ssm:GetConnectionStatus",
+              "s3:Put*",
+              "s3:Get*",
+              "s3:Create*",
+              "s3:Replicate*",
+              "s3:Delete*",
+              "s3:*Bucket*",
+              "s3:List*",
+              "s3:*Job*",
+              "s3:ReplicateTags",
+              "s3:RestoreObject",
+              "s3:AbortMultipartUpload"
+            ],
+            "Effect": "Allow",
+            "Resource": "*"
+          },
+          {
+            "Sid": "RestrictRDSActivity",
+            "Effect": "Allow",
+            "Action": [
+              "rds:CreateDBInstance",
+              "rds:CreateDBInstanceReadReplica",
+              "rds:StartDBInstance",
+              "rds:ModifyDBInstance",
+              "rds:RebootDBInstance",
+              "rds:RestoreDBInstanceFromDBSnapshot",
+              "rds:RestoreDBInstanceFromS3",
+              "rds:RestoreDBInstanceToPointInTime",
+              "rds:CreateDBCluster",
+              "rds:StartDBCluster",
+              "rds:ModifyDBCluster",
+              "rds:CreateGlobalCluster",
+              "rds:ModifyDBClusterEndpoint",
+              "rds:ModifyGlobalCluster",
+              "rds:RestoreDBClusterFromS3",
+              "rds:RestoreDBClusterFromSnapshot",
+              "rds:ModifyCurrentDBClusterCapacity",
+              "rds:PromoteReadReplicaDBCluster"
+            ],
+            "Resource": "*",
+            "Condition": {
+              "ForAnyValue:StringLikeIfExists": {
+                "rds:DatabaseEngine": [
+                  "aurora-mysql",
+                  "aurora-postgresql",
+                  "mysql",
+                  "postgres",
+                  "mariadb"
+                ],
+                "rds:DatabaseClass": [
+                  "*.nano",
+                  "*.micro",
+                  "*.small",
+                  "*.medium"
+                ]
+              },
+              "NumericLessThanIfExists": {
+                "rds:StorageSize": "101"
+              },
+              "NumericEqualsIfExists": {
+                "rds:Piops": "0"
+              },
+              "BoolIfExists": {
+                "rds:MultiAz": [
+                  false
+                ]
+              }
+            }
+          },
+          {
+            "Sid": "RestrictInstanceActions",
+            "Effect": "Allow",
+            "Action": [
+              "ec2:CreateVolume",
+              "ec2:ModifyVolume",
+              "ec2:ImportVolume",
+              "ec2:ModifyVolumeAttribute",
+              "ec2:ModifyFleet",
+              "ec2:ImportSnapshot",
+              "ec2:ResetInstanceAttribute",
+              "ec2:CreateFleet",
+              "ec2:CreateLaunchTemplateVersion",
+              "ec2:EnableVolumeIO",
+              "ec2:CreateLaunchTemplate",
+              "ec2:ImportInstance",
+              "ec2:ModifyInstanceCreditSpecification",
+              "ec2:ModifyLaunchTemplate",
+              "ec2:ModifyInstanceAttribute",
+              "ec2:RebootInstances",
+              "ec2:RunInstances",
+              "ec2:StartInstances"
+            ],
+            "Resource": "*",
+            "Condition": {
+              "StringEqualsIfExists": {
+                "ec2:Owner": "amazon"
+              },
+              "ForAllValues:StringLikeIfExists": {
+                "ec2:InstanceType": [
+                  "*.nano",
+                  "*.micro",
+                  "*.small"
+                ],
+                "ec2:Tenancy": "default"
+              },
+              "StringNotEqualsIfExists": {
+                "ec2:PlacementGroupStrategy": "cluster"
+              },
+              "StringNotEqualsIgnoreCaseIfExists": {
+                "ec2:VolumeType": [
+                  "io1",
+                  "st1"
+                ]
+              },
+              "NumericLessThanEqualsIfExists": {
+                "ec2:VolumeSize": "51"
+              }
+            }
+          },
+          {
+            "Sid": "RestrictActions",
+            "Effect": "Deny",
+            "Action": [
+              "ec2:*Spot*",
+              "ec2:*ReservedInstances*",
+              "ec2:*Scheduled*",
+              "ec2:*Purchase*",
+              "ec2:EnableFastSnapshotRestores",
+              "rds:PurchaseReservedDBInstancesOffering"
+            ],
+            "Resource": "*"
+          },
+          {
+            "Sid": "RestrictCloud9",
+            "Effect": "Deny",
+            "Action": [
+                "cloud9:CreateEnvironmentEC2",
+                "cloud9:UpdateEnvironment"
+            ],
+            "Resource": "*",
+            "Condition": {
+              "ForAnyValue:StringNotLikeIfExists": {
+                  "cloud9:InstanceType": [
+                      "*.nano",
+                      "*.micro",
+                      "*.small"
+                  ]
+              }
+            }
+          }
+        ]
+      ManagedPolicyName: lab_policy
+      Users:
+        - awsstudent
+
+  IAMUserAccessKey:
+    Type: 'AWS::IAM::AccessKey'
+    DependsOn: IAMUser
+    Properties:
+      Status: Active
+      UserName: awsstudent
+
+############
+# Outputs
+############
+
+Outputs:
+  URL:
+    Description: Load this URL to access and answer questions that appear in this lab.
+    Value: !Sub
+      - <a href="http://${URL}.s3-website.${AWS::Region}.amazonaws.com/" target="_blank">Access the multiple choice questions</a>
+      - { URL: !Ref htmlBucket}
+
+  AccessKey:
+    Value:
+      Ref: IAMUserAccessKey
+
+  SecretKey:
+    Value:
+      'Fn::GetAtt':
+        - IAMUserAccessKey
+        - SecretAccessKey
+
+#  WebServerIP:
+#    Description: Public IP address of EC2 instance
+#    Value: !Sub ${CafeInstance.PublicIp}
