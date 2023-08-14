@@ -2,6 +2,9 @@
 
 This CloudFormation template sets up a Virtual Private Cloud (VPC) with various resources, including EC2 instances, DynamoDB tables, Lambda functions, and an API Gateway for a multiple-choice question application.
 
+<img width="924" alt="m4ch-lab-start-arch" src="https://github.com/andres-pulecio/aws-cloudformation-templates/assets/53886913/737279b8-49c0-4392-a5b8-526a5344a4b5">
+
+
 ## Usage
 
 1. Make sure you have the AWS Command Line Interface (CLI) installed and configured.
