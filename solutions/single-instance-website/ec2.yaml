@@ -111,16 +111,23 @@ Resources:
                 path=Resources.WebServerInstance.Metadata.AWS::CloudFormation::Init
                 action=/opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WebServerInstance --region ${AWS::Region}
                 runas=root
-          # commands: 
-          #   echo: 
-          #     command: "echo \"$MYSQLHOST\" > endpoint.txt"
-          #     env: 
-          #       MYSQLHOST: !Ref RDSEndpointAddress
-          #     cwd: "/etc/"            
-            # export: 
-            #   command: "MYSQL_HOST=\"$MYSQLHOST\" >> /home/ssm-user/.bash_profile"
-            #   env: 
-            #     MYSQLHOST: !Ref RDSEndpointAddress
+
+            /etc/cfn/simpleWeb.sql:
+              content: |
+                CREATE USER 'wordpress-2' IDENTIFIED BY 'wordpress-pass';
+                GRANT ALL PRIVILEGES ON wordpress.* TO wordpress;
+                FLUSH PRIVILEGES;
+              mode: 000771
+              owner: root
+              group: root
+
+            /etc/cfn/set_user_db.sh:
+              content: |
+                #!/bin/bash
+                mysql -h my-db-instance.c6z9trgtwj6l.us-east-1.rds.amazonaws.com -u myusername -pmypassword < /etc/cfn/simpleWeb.sql
+              mode: 000771
+              owner: root
+              group: root
           services:
             sysvinit:
               httpd:
@@ -159,12 +166,9 @@ Resources:
           systemctl start mariadb
           systemctl enable httpds
           systemctl start httpd
-          touch ~/script.log
-          wget -P ~/ https://raw.githubusercontent.com/andres-pulecio/aws-cloudformation-templates/main/solutions/single-instance-website/simpleWeb.sql
-          chmod +x ~/simpleWeb.sql
-          sleep 2
-          mysql -h my-db-instance.c6z9trgtwj6l.us-east-1.rds.amazonaws.com -u myusername -p mypassword mydatabase < ~/simpleWeb.sql
-          touch ~/testscript.log
+          
+          /etc/cfn/set_user_db.sh
+
     CreationPolicy:
       ResourceSignal:
         Count: 1
