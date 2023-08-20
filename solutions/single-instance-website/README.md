@@ -180,7 +180,10 @@ The mappings section defines instance types based on the environment type (Dev, 
 - Ensure that security group settings are suitable for your application's security needs.
 - Customize the user data script in the `WebServerInstance` resource section to install additional software or perform specific configurations.
 - Always follow AWS best practices for security and resource management when deploying EC2 instances in a production environment.
-
+- it is necessary to execute this command on the instance accessing the SSM:
+  ```bash
+  sudo /etc/cfn/set_user_db.sh
+  ```
 ## Prerequisites
 Whilst single templates can be deployed from your local machine, Nested Stacks require that the nested templates are stored in an S3 bucket.
 
