@@ -1,6 +1,6 @@
 # Deploy Wordpress with Amazon RDS
 
-This repository contains what is needed to recreate the workshop (deploy-wordpress-with-amazon-rds) 
+This repository contains what is needed to recreate the workshop ([deploy-wordpress-with-amazon-rds](https://aws.amazon.com/tutorials/deploy-wordpress-with-amazon-rds/module-one/))
 
 This template create:
 * The root stack (which is also a parent stack for the first level stacks). This root stack will contain all the other stacks.
@@ -198,4 +198,5 @@ If you don't have S3 bucket, please go back to [S3simple.yaml](../../S3/S3simple
 
 *The following diagram represents high level overview of the infrastructure:*
 
-![diagram](https://github.com/andres-pulecio/aws-cloudformation-templates/assets/53886913/fd51445f-a860-48ca-875d-7d5ec24a6fb8)
+![diagram](https://github.com/andres-pulecio/aws-cloudformation-templates/assets/53886913/836d8bdb-5c26-41e3-b3d1-e187fd0615b7)
+
