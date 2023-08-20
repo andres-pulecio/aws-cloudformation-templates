@@ -198,3 +198,4 @@ If you don't have S3 bucket, please go back to [S3simple.yaml](../../S3/S3simple
 
 *The following diagram represents high level overview of the infrastructure:*
 
+![diagram](https://github.com/andres-pulecio/aws-cloudformation-templates/assets/53886913/fd51445f-a860-48ca-875d-7d5ec24a6fb8)
