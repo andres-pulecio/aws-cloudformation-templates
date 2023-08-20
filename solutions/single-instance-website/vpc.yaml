@@ -30,116 +30,273 @@ Parameters:
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
 
 Resources:
+  # VPC:
+  #   Type: AWS::EC2::VPC
+  #   Properties:
+  #     CidrBlock: !Ref VPCCidr
+  #     EnableDnsHostnames: true
+  #     EnableDnsSupport: true
+  #     InstanceTenancy: default
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref VPCName
+
+  # VPCPublicSubnet1:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     CidrBlock: !Ref PublicSubnet1Cidr
+  #     VpcId: !Ref VPC
+  #     AvailabilityZone: !Select [0, !Ref AvailabilityZones]
+  #     MapPublicIpOnLaunch: true
+  #     Tags:
+  #       - Key: Name
+  #         Value: PublicSubnet1
+  #       - Key: subnet-type
+  #         Value: Public
+
+  # VPCPublicSubnet1RouteTable:
+  #   Type: AWS::EC2::RouteTable
+  #   Properties:
+  #     VpcId: !Ref VPC
+  #     Tags:
+  #       - Key: Name
+  #         Value: PublicSubnet1
+
+  # VPCPublicSubnet1RouteTableAssociation:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     RouteTableId:
+  #       Ref: VPCPublicSubnet1RouteTable
+  #     SubnetId:
+  #       Ref: VPCPublicSubnet1
+
+  # VPCPublicSubnet1DefaultRoute:
+  #   Type: AWS::EC2::Route
+  #   Properties:
+  #     RouteTableId:
+  #       Ref: VPCPublicSubnet1RouteTable
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     GatewayId:
+  #       Ref: VPCIGW
+  #   DependsOn:
+  #     - VPCGW
+
+  # VPCPublicSubnet2:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     CidrBlock: !Ref PublicSubnet2Cidr
+  #     VpcId: !Ref VPC
+  #     AvailabilityZone: !Select [1, !Ref AvailabilityZones]
+  #     MapPublicIpOnLaunch: true
+  #     Tags:
+  #       - Key: Name
+  #         Value: PublicSubnet2
+  #       - Key: subnet-type
+  #         Value: Public
+
+  # VPCPublicSubnet2RouteTable:
+  #   Type: AWS::EC2::RouteTable
+  #   Properties:
+  #     VpcId: !Ref VPC
+  #     Tags:
+  #       - Key: Name
+  #         Value: PublicSubnet2
+
+  # VPCPublicSubnet2RouteTableAssociation:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     RouteTableId:
+  #       Ref: VPCPublicSubnet2RouteTable
+  #     SubnetId:
+  #       Ref: VPCPublicSubnet2
+
+  # VPCPublicSubnet2DefaultRoute:
+  #   Type: AWS::EC2::Route
+  #   Properties:
+  #     RouteTableId: !Ref VPCPublicSubnet2RouteTable
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     GatewayId: !Ref VPCIGW
+  #   DependsOn:
+  #     - VPCGW
+
+  # VPCIGW:
+  #   Type: AWS::EC2::InternetGateway
+  #   Properties:
+  #     Tags:
+  #       - Key: Name
+  #         Value: VPCIGW
+
+  # VPCGW:
+  #   Type: AWS::EC2::VPCGatewayAttachment
+  #   Properties:
+  #     VpcId:
+  #       Ref: VPC
+  #     InternetGatewayId:
+  #       Ref: VPCIGW
+
+###########
+# VPC with Internet Gateway
+###########
+
   VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: !Ref VPCCidr
-      EnableDnsHostnames: true
+      CidrBlock: 10.0.0.0/16
       EnableDnsSupport: true
-      InstanceTenancy: default
+      EnableDnsHostnames: true
       Tags:
         - Key: Name
-          Value: !Ref VPCName
+          Value: VPC
 
-  VPCPublicSubnet1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      CidrBlock: !Ref PublicSubnet1Cidr
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: PublicSubnet1
-        - Key: subnet-type
-          Value: Public
-
-  VPCPublicSubnet1RouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: PublicSubnet1
-
-  VPCPublicSubnet1RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: VPCPublicSubnet1RouteTable
-      SubnetId:
-        Ref: VPCPublicSubnet1
-
-  VPCPublicSubnet1DefaultRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId:
-        Ref: VPCPublicSubnet1RouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId:
-        Ref: VPCIGW
-    DependsOn:
-      - VPCGW
-
-  VPCPublicSubnet2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      CidrBlock: !Ref PublicSubnet2Cidr
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select [1, !Ref AvailabilityZones]
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: PublicSubnet2
-        - Key: subnet-type
-          Value: Public
-
-  VPCPublicSubnet2RouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: PublicSubnet2
-
-  VPCPublicSubnet2RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: VPCPublicSubnet2RouteTable
-      SubnetId:
-        Ref: VPCPublicSubnet2
-
-  VPCPublicSubnet2DefaultRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId: !Ref VPCPublicSubnet2RouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref VPCIGW
-    DependsOn:
-      - VPCGW
-
-  VPCIGW:
+  IGW:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: VPCIGW
+          Value: IGW
 
-  VPCGW:
+  VPCtoIGWConnection:
     Type: AWS::EC2::VPCGatewayAttachment
+    DependsOn:
+      - IGW
+      - VPC
     Properties:
-      VpcId:
-        Ref: VPC
-      InternetGatewayId:
-        Ref: VPCIGW
+      InternetGatewayId: !Ref IGW
+      VpcId: !Ref VPC
+
+###########
+# Public Route Table
+###########
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Public Route Table
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn:
+      - PublicRouteTable
+      - VPCtoIGWConnection
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+      RouteTableId: !Ref PublicRouteTable
+
+###########
+# Private Route Table
+###########
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Private Route Table
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Private Route Table 2
+
+###########
+# Public Subnet
+###########
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      MapPublicIpOnLaunch: true
+      CidrBlock: 10.0.0.0/24
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: Public Subnet 1
+
+  PublicRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - PublicRouteTable
+      - PublicSubnet1
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+###########
+# Private Subnet
+###########
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/23
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: Private Subnet 1
+
+  PrivateRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - PrivateRouteTable
+      - PrivateSubnet1
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.4.0/23
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: Private Subnet 2
+
+  PrivateRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - PrivateRouteTable2
+      - PrivateSubnet2
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
+
 
 Outputs:
   VpcId:
     Value: !Ref VPC
 
-  PublicSubnet1:
-    Value: !Ref VPCPublicSubnet1
+  PrivateSubnet1:
+    Value: !Ref PrivateSubnet1
 
-  PublicSubnet2:
-    Value: !Ref VPCPublicSubnet2
+  PrivateSubnet2:
+    Value: !Ref PrivateSubnet2
+
+  PublicSubnet1:
+    Value: !Ref PublicSubnet1
