@@ -101,7 +101,6 @@ Resources:
         RDSEndpointAddress: !GetAtt RDSStack.Outputs.RDSEndpointAddress
         RDSMasterUsername: !Ref RDSMasterUsername
         RDSMasterUserPassword: !Ref RDSMasterUserPassword
-        AvailabilityZones: !Ref AvailabilityZones
     DependsOn:
       - RDSStack
 
