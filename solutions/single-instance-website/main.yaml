@@ -12,7 +12,7 @@ Parameters:
 
   AvailabilityZones:
     Type: List<AWS::EC2::AvailabilityZone::Name>
-    Description: The list of Availability Zones to use for the subnets in the VPC. Select 2 AZs.
+    Description: The list of Availability Zones to use for the subnets in the VPC. Select 1 AZs.
 
   VPCName:
     Type: String
@@ -101,6 +101,7 @@ Resources:
         RDSEndpointAddress: !GetAtt RDSStack.Outputs.RDSEndpointAddress
         RDSMasterUsername: !Ref RDSMasterUsername
         RDSMasterUserPassword: !Ref RDSMasterUserPassword
+        AvailabilityZones: !Ref AvailabilityZones
     DependsOn:
       - RDSStack
 

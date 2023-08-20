@@ -117,10 +117,7 @@ Resources:
       VpcId: !Ref VPC
       MapPublicIpOnLaunch: true
       CidrBlock: 10.0.0.0/24
-      AvailabilityZone: !Select
-        - 0
-        - !GetAZs
-          Ref: AWS::Region
+      AvailabilityZone: !Select [0, !Ref AvailabilityZones] #Cambiar a [1, !Ref AvailabilityZones] para seleccionar la segunda AVz
       Tags:
         - Key: Name
           Value: Public Subnet 1
@@ -144,10 +141,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.2.0/23
-      AvailabilityZone: !Select
-        - 0
-        - !GetAZs
-          Ref: AWS::Region
+      AvailabilityZone: !Select [0, !Ref AvailabilityZones] #Cambiar a [1, !Ref AvailabilityZones] para seleccionar la segunda AVz
       Tags:
         - Key: Name
           Value: Private Subnet 1
@@ -167,10 +161,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.4.0/23
-      AvailabilityZone: !Select
-        - 1
-        - !GetAZs
-          Ref: AWS::Region
+      AvailabilityZone: !Select [1, !Ref AvailabilityZones] #Cambiar a [1, !Ref AvailabilityZones] para seleccionar la segunda AVz
       Tags:
         - Key: Name
           Value: Private Subnet 2
